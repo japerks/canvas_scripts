@@ -56,7 +56,7 @@ function getStorage(key) {
 
 function setStorage(key, value, expires) {
     if (expires === undefined || expires === null) {
-        expires = (6 * 60); // default: seconds for 6 hours (6*60*60)
+        expires = (24 * 60 * 60); // default: seconds for 6 hours (6*60*60)
     } else {
         expires = Math.abs(expires); //make sure it's positive
     }
