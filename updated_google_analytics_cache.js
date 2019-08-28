@@ -1,4 +1,4 @@
-// Updated May 31, 2019
+// Updated Aug 28, 2019
 // In Google Analytics you'll need to set up custom dimensions as follows
 // Custom Dimension 1 = Canvas User ID --- Scope = User
 // Custom Dimension 2 = Archived --- Scope = User
