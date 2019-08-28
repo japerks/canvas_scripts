@@ -9,6 +9,18 @@
 // Custom Dimension 7 = Canvas Term ID --- = Scope = Hit
 // Custom Dimension 8 = Canvas Course Role --- Scope = Hit
 
+(function (i, s, o, g, r, a, m) {
+    i['GoogleAnalyticsObject'] = r;
+    i[r] = i[r] || function () {
+        (i[r].q = i[r].q || []).push(arguments)
+    }, i[r].l = 1 * new Date();
+    a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0];
+    a.async = 1;
+    a.src = g;
+    m.parentNode.insertBefore(a, m)
+})(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'custom_ga');
+
 function removeStorage(key) {
     try {
         localStorage.removeItem(key);
@@ -61,22 +73,24 @@ function setStorage(key, value, expires) {
     return true;
 }
 
-// For Google Analytics
 async function coursesRequest(courseId) {
-    let response = await fetch('/api/v1/users/self/courses?per_page=100', {headers: {Accept: 'application/json'}});
-    let data = await response.json();
-  
+    // 
+    let response = await fetch('/api/v1/users/self/courses?per_page=100');
+    let data = await response.text();
+    data = data.substr(9);
+    data = JSON.parse(data)
     var stringData = JSON.stringify(data)
     setStorage('ga_enrollments', stringData, null)
     var course = parseCourses(courseId, stringData)
     return course
 };
 
-// For Google Analytics
 function parseCourses(courseId, courseData) {
     if (courseData != undefined) {
         let data = JSON.parse(courseData);
+        //console.log(data)
         for (var i = 0; i < data.length; i++) {
+            // console.log(data[i]['id'] + " " + courseId)
             if (data[i]['id'] == courseId) {
                 return data[i]
             }
@@ -85,25 +99,24 @@ function parseCourses(courseId, courseData) {
     return null
 }
 
-// For Google Analytics
 function gaCourseDimensions(course) {
-    ga('custom_ga.set', 'dimension1', course['id']);
-    ga('custom_ga.set', 'dimension2', course['name']);
-    ga('custom_ga.set', 'dimension4', course['account_id']);
-    ga('custom_ga.set', 'dimension7', course['enrollment_term_id']);
-    ga('custom_ga.set', 'dimension8', course['enrollments'][0]['type']);
-    ga('custom_ga.send', 'pageview');
+    custom_ga('set', 'dimension4', course['id']);
+    custom_ga('set', 'dimension5', course['name']);
+    custom_ga('set', 'dimension6', course['account_id']);
+    custom_ga('set', 'dimension7', course['enrollment_term_id']);
+    custom_ga('set', 'dimension8', course['enrollments'][0]['type']);
+    custom_ga('send', 'pageview');
     return
 }
-// For Google Analytics
+
 function googleAnalyticsCode(trackingID) {
     var userId, userRoles, attempts, courseId;
-    ga('create', trackingID, 'auto', 'custom_ga');
+    custom_ga('create', trackingID, 'auto');
     userId = ENV["current_user_id"];
     userRoles = ENV['current_user_roles'];
-    ga('custom_ga.set', 'userId', userId);
-    ga('custom_ga.set', 'dimension5', userId);
-    ga('custom_ga.set', 'dimension3', userRoles);
+    custom_ga('set', 'userId', userId);
+    custom_ga('set', 'dimension1', userId);
+    custom_ga('set', 'dimension3', userRoles);
     courseId = window.location.pathname.match(/\/courses\/(\d+)/);
     if (courseId) {
         courseId = courseId[1];
@@ -113,22 +126,27 @@ function googleAnalyticsCode(trackingID) {
             if (courses != null) {
                 var course = parseCourses(courseId, courses);
                 if (course === null) {
+                    // console.log("course_id not found in cache, retrieving...")
                     coursesRequest(courseId).then(course => {
                         if (course === null) {
-                            ga('custom_ga.set', 'dimension4', courseId);
-                            ga('custom_ga.send', 'pageview');
+                            // console.log("course data not found")
+                            custom_ga('set', 'dimension4', courseId);
+                            custom_ga('send', 'pageview');
                         } else {
                             gaCourseDimensions(course)
                         }
                     });
                 } else {
+                    // console.log("course found in cache")
                     gaCourseDimensions(course)
                 }
             } else {
+                // console.log("cache not found, retrieving cache data")
                 coursesRequest(courseId).then(course => {
                     if (course === null) {
-                        ga('custom_ga.set', 'dimension4', courseId);
-                        ga('custom_ga.send', 'pageview');
+                        // console.log("course data not found")
+                        custom_ga('set', 'dimension4', courseId);
+                        custom_ga('send', 'pageview');
                     } else {
                         gaCourseDimensions(course)
                     }
@@ -137,15 +155,14 @@ function googleAnalyticsCode(trackingID) {
         } catch (err) {
             attempts += 1;
             if (attempts > 5) {
-                ga('custom_ga.set', 'dimension4', courseId);
-                ga('custom_ga.send', 'pageview');
+                custom_ga('set', 'dimension4', courseId);
+                custom_ga('send', 'pageview');
                 return;
             };
         };
     } else {
-        ga('custom_ga.send', 'pageview');
+        custom_ga('send', 'pageview');
     };
 };
-// END - Google Analytics Tracking Code
 
 googleAnalyticsCode("UA-12345678-1") // replace google analytics tracking id here
