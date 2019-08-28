@@ -19,7 +19,7 @@
     a.async = 1;
     a.src = g;
     m.parentNode.insertBefore(a, m)
-})(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
+})(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'custom_ga');
 
 function removeStorage(key) {
     try {
@@ -100,23 +100,23 @@ function parseCourses(courseId, courseData) {
 }
 
 function gaCourseDimensions(course) {
-    ga('set', 'dimension4', course['id']);
-    ga('set', 'dimension5', course['name']);
-    ga('set', 'dimension6', course['account_id']);
-    ga('set', 'dimension7', course['enrollment_term_id']);
-    ga('set', 'dimension8', course['enrollments'][0]['type']);
-    ga('send', 'pageview');
+    custom_ga('set', 'dimension4', course['id']);
+    custom_ga('set', 'dimension5', course['name']);
+    custom_ga('set', 'dimension6', course['account_id']);
+    custom_ga('set', 'dimension7', course['enrollment_term_id']);
+    custom_ga('set', 'dimension8', course['enrollments'][0]['type']);
+    custom_ga('send', 'pageview');
     return
 }
 
 function googleAnalyticsCode(trackingID) {
     var userId, userRoles, attempts, courseId;
-    ga('create', trackingID, 'auto');
+    custom_ga('create', trackingID, 'auto');
     userId = ENV["current_user_id"];
     userRoles = ENV['current_user_roles'];
-    ga('set', 'userId', userId);
-    ga('set', 'dimension1', userId);
-    ga('set', 'dimension3', userRoles);
+    custom_ga('set', 'userId', userId);
+    custom_ga('set', 'dimension1', userId);
+    custom_ga('set', 'dimension3', userRoles);
     courseId = window.location.pathname.match(/\/courses\/(\d+)/);
     if (courseId) {
         courseId = courseId[1];
@@ -130,8 +130,8 @@ function googleAnalyticsCode(trackingID) {
                     coursesRequest(courseId).then(course => {
                         if (course === null) {
                             // console.log("course data not found")
-                            ga('set', 'dimension4', courseId);
-                            ga('send', 'pageview');
+                            custom_ga('set', 'dimension4', courseId);
+                            custom_ga('send', 'pageview');
                         } else {
                             gaCourseDimensions(course)
                         }
@@ -145,8 +145,8 @@ function googleAnalyticsCode(trackingID) {
                 coursesRequest(courseId).then(course => {
                     if (course === null) {
                         // console.log("course data not found")
-                        ga('set', 'dimension4', courseId);
-                        ga('send', 'pageview');
+                        custom_ga('set', 'dimension4', courseId);
+                        custom_ga('send', 'pageview');
                     } else {
                         gaCourseDimensions(course)
                     }
@@ -155,13 +155,13 @@ function googleAnalyticsCode(trackingID) {
         } catch (err) {
             attempts += 1;
             if (attempts > 5) {
-                ga('set', 'dimension4', courseId);
-                ga('send', 'pageview');
+                custom_ga('set', 'dimension4', courseId);
+                custom_ga('send', 'pageview');
                 return;
             };
         };
     } else {
-        ga('send', 'pageview');
+        custom_ga('send', 'pageview');
     };
 };
 
