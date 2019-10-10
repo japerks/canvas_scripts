@@ -10,70 +10,71 @@
 // Custom Dimension 8 = Canvas Course Role --- Scope = Hit
 
 (function (i, s, o, g, r, a, m) {
-    i['GoogleAnalyticsObject'] = r;
-    i[r] = i[r] || function () {
-        (i[r].q = i[r].q || []).push(arguments)
-    }, i[r].l = 1 * new Date();
-    a = s.createElement(o),
-        m = s.getElementsByTagName(o)[0];
-    a.async = 1;
-    a.src = g;
-    m.parentNode.insertBefore(a, m)
+  i['GoogleAnalyticsObject'] = r;
+  i[r] = i[r] || function () {
+    (i[r].q = i[r].q || []).push(arguments)
+  }, i[r].l = 1 * new Date();
+  a = s.createElement(o),
+    m = s.getElementsByTagName(o)[0];
+  a.async = 1;
+  a.src = g;
+  m.parentNode.insertBefore(a, m)
 })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'custom_ga');
 
-function removeStorage(key) {
+(function () {
+  function removeStorage(key) {
     try {
-        localStorage.removeItem(key);
-        localStorage.removeItem(key + '_expiresIn');
+      localStorage.removeItem(key);
+      localStorage.removeItem(key + '_expiresIn');
     } catch (e) {
-        console.log('removeStorage: Error removing key [' + key + '] from localStorage: ' + JSON.stringify(e));
-        return false;
+      console.log('removeStorage: Error removing key [' + key + '] from localStorage: ' + JSON.stringify(e));
+      return false;
     }
     return true;
-}
+  }
 
-function getStorage(key) {
+  function getStorage(key) {
     var now = Date.now(); //epoch time, lets deal only with integer
     // set expiration for storage
     var expiresIn = localStorage.getItem(key + '_expiresIn');
     if (expiresIn === undefined || expiresIn === null) {
-        expiresIn = 0;
+      expiresIn = 0;
     }
 
     if (expiresIn < now) { // Expired
-        removeStorage(key);
+      removeStorage(key);
+      return null;
+    } else {
+      try {
+        var value = localStorage.getItem(key);
+        return value;
+      } catch (e) {
+        console.log('getStorage: Error reading key [' + key + '] from localStorage: ' + JSON.stringify(e));
         return null;
-    } else {
-        try {
-            var value = localStorage.getItem(key);
-            return value;
-        } catch (e) {
-            console.log('getStorage: Error reading key [' + key + '] from localStorage: ' + JSON.stringify(e));
-            return null;
-        }
+      }
     }
-}
+  }
 
-function setStorage(key, value, expires) {
+  function setStorage(key, value, expires) {
     if (expires === undefined || expires === null) {
-        expires = (24 * 60 * 60); // default: seconds for 6 hours (6*60*60)
+      expires = (24 * 60 * 60); // default: seconds for 6 hours (6*60*60)
     } else {
-        expires = Math.abs(expires); //make sure it's positive
+      expires = Math.abs(expires); //make sure it's positive
     }
 
     var now = Date.now(); //millisecs since epoch time, lets deal only with integer
     var schedule = now + expires * 1000;
     try {
-        localStorage.setItem(key, value);
-        localStorage.setItem(key + '_expiresIn', schedule);
+      localStorage.setItem(key, value);
+      localStorage.setItem(key + '_expiresIn', schedule);
     } catch (e) {
-        console.log('setStorage: Error setting key [' + key + '] in localStorage: ' + JSON.stringify(e));
-        return false;
+      console.log('setStorage: Error setting key [' + key + '] in localStorage: ' + JSON.stringify(e));
+      return false;
     }
     return true;
-}
+  }
 
-async function coursesRequest(courseId) {
+  async function coursesRequest(courseId) {
     // 
     let response = await fetch('/api/v1/users/self/courses?per_page=100');
     let data = await response.text();
@@ -83,23 +84,23 @@ async function coursesRequest(courseId) {
     setStorage('ga_enrollments', stringData, null)
     var course = parseCourses(courseId, stringData)
     return course
-};
+  };
 
-function parseCourses(courseId, courseData) {
+  function parseCourses(courseId, courseData) {
     if (courseData != undefined) {
-        let data = JSON.parse(courseData);
-        //console.log(data)
-        for (var i = 0; i < data.length; i++) {
-            // console.log(data[i]['id'] + " " + courseId)
-            if (data[i]['id'] == courseId) {
-                return data[i]
-            }
+      let data = JSON.parse(courseData);
+      //console.log(data)
+      for (var i = 0; i < data.length; i++) {
+        // console.log(data[i]['id'] + " " + courseId)
+        if (data[i]['id'] == courseId) {
+          return data[i]
         }
+      }
     }
     return null
-}
+  }
 
-function gaCourseDimensions(course) {
+  function gaCourseDimensions(course) {
     custom_ga('set', 'dimension4', course['id']);
     custom_ga('set', 'dimension5', course['name']);
     custom_ga('set', 'dimension6', course['account_id']);
@@ -107,9 +108,9 @@ function gaCourseDimensions(course) {
     custom_ga('set', 'dimension8', course['enrollments'][0]['type']);
     custom_ga('send', 'pageview');
     return
-}
+  }
 
-function googleAnalyticsCode(trackingID) {
+  function googleAnalyticsCode(trackingID) {
     var userId, userRoles, attempts, courseId;
     custom_ga('create', trackingID, 'auto');
     userId = ENV["current_user_id"];
@@ -119,50 +120,54 @@ function googleAnalyticsCode(trackingID) {
     custom_ga('set', 'dimension3', userRoles);
     courseId = window.location.pathname.match(/\/courses\/(\d+)/);
     if (courseId) {
-        courseId = courseId[1];
-        attempts = 0;
-        try {
-            let courses = getStorage('ga_enrollments')
-            if (courses != null) {
-                var course = parseCourses(courseId, courses);
-                if (course === null) {
-                    // console.log("course_id not found in cache, retrieving...")
-                    coursesRequest(courseId).then(course => {
-                        if (course === null) {
-                            // console.log("course data not found")
-                            custom_ga('set', 'dimension4', courseId);
-                            custom_ga('send', 'pageview');
-                        } else {
-                            gaCourseDimensions(course)
-                        }
-                    });
-                } else {
-                    // console.log("course found in cache")
-                    gaCourseDimensions(course)
-                }
-            } else {
-                // console.log("cache not found, retrieving cache data")
-                coursesRequest(courseId).then(course => {
-                    if (course === null) {
-                        // console.log("course data not found")
-                        custom_ga('set', 'dimension4', courseId);
-                        custom_ga('send', 'pageview');
-                    } else {
-                        gaCourseDimensions(course)
-                    }
-                });
-            }
-        } catch (err) {
-            attempts += 1;
-            if (attempts > 5) {
+      courseId = courseId[1];
+      attempts = 0;
+      try {
+        let courses = getStorage('ga_enrollments')
+        if (courses != null) {
+          var course = parseCourses(courseId, courses);
+          if (course === null) {
+            // console.log("course_id not found in cache, retrieving...")
+            coursesRequest(courseId).then(course => {
+              if (course === null) {
+                // console.log("course data not found")
                 custom_ga('set', 'dimension4', courseId);
                 custom_ga('send', 'pageview');
-                return;
-            };
-        };
+              } else {
+                gaCourseDimensions(course)
+              }
+            });
+          } else {
+            // console.log("course found in cache")
+            gaCourseDimensions(course)
+          }
+        } else {
+          // console.log("cache not found, retrieving cache data")
+          coursesRequest(courseId).then(course => {
+            if (course === null) {
+              // console.log("course data not found")
+              custom_ga('set', 'dimension4', courseId);
+              custom_ga('send', 'pageview');
+            } else {
+              gaCourseDimensions(course)
+            }
+          });
+        }
+      } catch (err) {
+        attempts += 1;
+        if (attempts > 5) {
+          custom_ga('set', 'dimension4', courseId);
+          custom_ga('send', 'pageview');
+          return;
+        }
+        ;
+      }
+      ;
     } else {
-        custom_ga('send', 'pageview');
-    };
-};
+      custom_ga('send', 'pageview');
+    }
+    ;
+  };
 
-googleAnalyticsCode("UA-12345678-1") // replace google analytics tracking id here
+  googleAnalyticsCode("UA-12345678-1") // replace google analytics tracking id here
+});
